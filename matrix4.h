@@ -297,12 +297,12 @@ inline Matrix4 linFact(const Matrix4& m) {
 }
 
 //inline Matrix4 makeMixedFrame(const Matrix4& O, const Matrix4& E) {
-//   return transFact(O) * linFact(E);
+  //return transFact(O) * linFact(E);
 //}
 //
 //inline Matrix4 doMtoOwrtA(const Matrix4& M, const Matrix4& O,
-//                          const Matrix4& A) {
-//   return A * M * inv(A) * O;
+      //                    const Matrix4& A) {
+  // return A * M * inv(A) * O;
 //}
 
 #endif

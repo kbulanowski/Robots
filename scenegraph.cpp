@@ -33,25 +33,62 @@ class RbtAccumVisitor : public SgNodeVisitor {
 protected:
   vector<RigTForm> rbtStack_;
   SgTransformNode& target_;
+  RigTForm identity_;
   bool found_;
 public:
   RbtAccumVisitor(SgTransformNode& target)
     : target_(target)
-    , found_(false) {}
+    , found_(false)
+
+	{rbtStack_.push_back(identity_);}
+
 
   const RigTForm getAccumulatedRbt(int offsetFromStackTop = 0) {
+	  if(found_ == true){
+	  return rbtStack_.at(rbtStack_.size()-1-offsetFromStackTop);
+	  }
+	  else{
+		 cout << "should reach here";
+		  return identity_;
+	  }
+	//int backnode = rbtStack_.size()-1;
+	//if(offsetFromStackTop == 0){
+	//return rbtStack_.at(backnode);
+	//} else{
+	//	return rbtStack_.at(backnode-offsetFromStackTop);
+	// }
 
 	  // TODO
   }
 
   virtual bool visit(SgTransformNode& node) {
+	 if( node == target_){
+		 found_ = true;
+		 rbtStack_.push_back(rbtStack_.back()*node.getRbt());
+		// printf("rbtStack_ ",rbtStack_);
+		 return false;
+	 }
+	 else {
+		 if(rbtStack_.empty())
+
+			 rbtStack_.push_back(node.getRbt());
+		 else
+			 rbtStack_.push_back(rbtStack_.back()*node.getRbt());
+	 }
+		return true;
+
+
+
 
 	  // TODO
   }
 
   virtual bool postVisit(SgTransformNode& node) {
 
-	  // TODO
+		  rbtStack_.pop_back();
+		  return true;
+
+
   }
 };
 

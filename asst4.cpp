@@ -223,8 +223,18 @@ static Matrix4 makeProjectionMatrix() {
 }
 
 inline RigTForm getEyeRbt()
-{
-	return g_skyNode->getRbt();
+{	RigTForm eyeRbt;
+	if(g_activeView == G_SKY_CAM){
+		 eyeRbt = getPathAccumRbt(g_world,g_skyNode);
+
+	}
+	else if(g_activeView == G_ROBOT1){
+		eyeRbt = getPathAccumRbt(g_world,g_robot1Node);
+	}
+	else if(g_activeView == G_ROBOT2){
+		eyeRbt = getPathAccumRbt(g_world,g_robot2Node);
+	}
+	return eyeRbt;
 
    // TODO: Add code to implement view switching, using getPathAccumRbt().
 }
@@ -375,7 +385,7 @@ static void motion(const int x, const int y) {
    double dx = x - g_mouseClickX;
    double dy = g_windowHeight - y - 1 - g_mouseClickY;
 
-   RigTForm m;
+   RigTForm m,A,As,L;
    if (g_mouseLClickButton && !g_mouseRClickButton) { // left button down?
       if (g_currentPickedRbtNode == g_skyNode ||
           (g_currentPickedRbtNode == g_robot1Node && g_activeView == G_ROBOT1) ||
@@ -423,7 +433,18 @@ static void motion(const int x, const int y) {
 
 	  // TODO
 	  // Working with g_currentPickedRbtNode, add code here to apply transformation m.
+	   if(g_currentPickedRbtNode != g_skyNode){
+	   A = makeMixedFrame(getPathAccumRbt(g_world,g_currentPickedRbtNode,0),getEyeRbt());
 
+	   As =  (inv(getPathAccumRbt(g_world , g_currentPickedRbtNode, 1))) *A ;
+	   g_currentPickedRbtNode->setRbt(doMtoOwrtA(m,g_currentPickedRbtNode->getRbt(),As));
+	   }
+	   else{
+		   A = makeMixedFrame(getPathAccumRbt(g_world,g_currentPickedRbtNode,1),getEyeRbt());
+
+		  	   As =  (inv(getPathAccumRbt(g_world , g_currentPickedRbtNode, 1))) *A ;
+		  	   g_currentPickedRbtNode->setRbt(doMtoOwrtA(m,g_currentPickedRbtNode->getRbt(),As));
+	   }
       glutPostRedisplay(); // we always redraw if we changed the scene
    }
 
@@ -479,7 +500,7 @@ static void mouse(const int button, const int state, const int x, const int y) {
    if (g_mouseLClickButton && useArcball())  // store arcball click coordinates
       g_arcballClick = findAbClick(g_mouseClickX, g_mouseClickY);
 
-   glutPostRedisplay();
+  glutPostRedisplay();
 }
 
 
@@ -581,9 +602,11 @@ static void constructRobot(shared_ptr<SgTransformNode> base, const Cvec3& color)
       ARM_THICK = 0.25,
       TORSO_LEN = 1.5,
       TORSO_THICK = 0.25,
-      TORSO_WIDTH = 1;
-   const int NUM_JOINTS = 3,
-      NUM_SHAPES = 3;
+      TORSO_WIDTH = 1,
+	  LEG_LEN = 0.8;
+
+   const int NUM_JOINTS = 10, //code changed original value 3
+      NUM_SHAPES = 10;  //code changed original value 3
 
    struct JointDesc {
       int parent;
@@ -593,7 +616,16 @@ static void constructRobot(shared_ptr<SgTransformNode> base, const Cvec3& color)
    JointDesc jointDesc[NUM_JOINTS] = {
       {-1}, // torso
       {0,  TORSO_WIDTH/2, TORSO_LEN/2, 0}, // upper right arm
-      {1,  ARM_LEN, 0, 0} // lower right arm
+	  {1,  ARM_LEN, 0, 0},// lower right arm
+	  {0, -TORSO_WIDTH/2,TORSO_LEN/2,0}, //upper left arm
+	  {3,-ARM_LEN,0,0},
+	  {0,-TORSO_WIDTH/2,-TORSO_LEN/2,0},
+	  {5,0,-LEG_LEN,0},
+	  {0,TORSO_WIDTH/2,-TORSO_LEN/2,0},
+	  {7,0,-LEG_LEN,0},
+	  {0,0,TORSO_LEN/2,0}
+
+
    };
 
    struct ShapeDesc {
@@ -605,7 +637,14 @@ static void constructRobot(shared_ptr<SgTransformNode> base, const Cvec3& color)
    ShapeDesc shapeDesc[NUM_SHAPES] = {
       {0, 0,         0, 0, TORSO_WIDTH, TORSO_LEN, TORSO_THICK, g_cube}, // torso
       {1, ARM_LEN/2, 0, 0, ARM_LEN, ARM_THICK, ARM_THICK, g_cube}, // upper right arm
-      {2, ARM_LEN/2, 0, 0, ARM_LEN/2, ARM_THICK/2, ARM_THICK/2, g_sphere} // lower right arm
+      {2, ARM_LEN/2, 0, 0, ARM_LEN/2, ARM_THICK/2, ARM_THICK/2, g_sphere},// lower right arm
+	  {3,-ARM_LEN/2,0, 0, ARM_LEN, ARM_THICK, ARM_THICK, g_cube},//upper left arm
+	  {4,-ARM_LEN/2, 0, 0,ARM_LEN/2,ARM_THICK/2, ARM_THICK/2,g_sphere},
+	  {5,0,-LEG_LEN/2,0,ARM_THICK,LEG_LEN,ARM_THICK,g_cube},
+	  {6,0,-LEG_LEN/2,0,ARM_THICK/2,LEG_LEN/2,ARM_THICK/2,g_sphere},
+	  {7,0,-LEG_LEN/2,0,ARM_THICK,LEG_LEN,ARM_THICK,g_cube},
+	  {8,0,-LEG_LEN/2,0,ARM_THICK/2,LEG_LEN/2,ARM_THICK/2,g_sphere},
+	  {9,0,ARM_THICK,0,ARM_THICK,ARM_THICK,ARM_THICK,g_sphere}
    };
 
    shared_ptr<SgTransformNode> jointNodes[NUM_JOINTS];
